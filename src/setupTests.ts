@@ -44,11 +44,7 @@ global.createTestApp = async () => {
       if (err) {
         reject(err);
       } else {
-        app.use(acceptLang({
-          defaultLanguage: 'de',
-          supportedLanguages: ['de', 'en'],
-          t
-        }));
+        app.use(acceptLang(t, 'de', 'en'));
 
         resolve(app);
       }

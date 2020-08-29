@@ -18,85 +18,46 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { CanBeNil, Middleware, Request } from 'flitz';
+import { CanBeNil, Middleware } from 'flitz';
 import { TFunction } from 'i18next';
-
-/**
- * Options for 'acceptLang()' function.
- */
-export interface AcceptLangOptions {
-  /**
-   * The default language or a function, that detects it by current request.
-   */
-  defaultLanguage: DefaultLanguageValue;
-  /**
-   * List of at least one supported language.
-   */
-  supportedLanguages: string[];
-  /**
-   * The optional i18 t() function to use.
-   */
-  t?: CanBeNil<TFunction>;
-}
-
-/**
- * A value for a default language.
- */
-export type DefaultLanguageValue = DefaultLanguageDetector | string;
-
-/**
- * A function, that detects the default language by request.
- */
-export type DefaultLanguageDetector = (request: Request) => string;
 
 /**
  * Creates a middleware, which extracts information from
  * 'Accept-Language' request header and makes them available in
  * 'lang' and 'languages' properties of request context.
  * 
- * @param {AcceptLangOptions} options The options.
+ * @param {TFunction} [t] The optional i18 translator function.
+ * @param {string[]} [languages] At least ome supported language. The first is ALWAYS the default one.
  *
  * @returns {Middleware} The new middleware.
  */
-export function acceptLang(options: AcceptLangOptions): Middleware {
-  if (typeof options !== 'object') {
-    throw new TypeError('options must be object');
-  }
-
-  if (
-    typeof options.defaultLanguage !== 'string' &&
-    typeof options.defaultLanguage !== 'function'
-  ) {
-    throw new TypeError('options.defaultLanguage must be string or function');
-  }
-
-  if (!Array.isArray(options.supportedLanguages)) {
-    throw new TypeError('options.supportedLanguages must be array');
-  }
-
-  if (!options.supportedLanguages.length) {
-    throw new TypeError('options.supportedLanguages must contain at least one entry');
-  }
-
-  if (!options.supportedLanguages.every(sl => typeof sl === 'string')) {
-    throw new TypeError('Each entry of options.supportedLanguages must be string');
-  }
-
-  let defaultLangFunc: DefaultLanguageDetector;
-  if (typeof options.defaultLanguage === 'string') {
-    const defaultLang = options.defaultLanguage.toLowerCase().trim();
-
-    defaultLangFunc = () => defaultLang;
+export function acceptLang(...languages: string[]): Middleware;
+export function acceptLang(t: TFunction, ...languages: string[]): Middleware;
+export function acceptLang(tOrLang: TFunction | string, ...languages: string[]): Middleware {
+  let t: CanBeNil<TFunction>;
+  if (typeof tOrLang === 'string') {
+    languages = [tOrLang].concat(languages);
   } else {
-    defaultLangFunc = options.defaultLanguage;
+    t = tOrLang;
+  }
+
+  if (!languages.length) {
+    throw new TypeError('languages must contain at least one entry');
+  }
+
+  if (!languages.every(sl => typeof sl === 'string')) {
+    throw new TypeError('Each entry of languages must be string');
+  }
+
+  if (t !== null && typeof t !== 'undefined') {
+    if (typeof t !== 'function') {
+      throw new TypeError('t must be function');
+    }
   }
 
   // normalize
-  const supportedLanguages = options.supportedLanguages.map(sl => sl.toLowerCase().trim());
-
-  const translator = options.t;
-
-  options = undefined as any;  // we do not need 'options' anymore here
+  languages = languages.map(sl => sl.toLowerCase().trim());
+  const defaultLang = languages[0];
 
   return async (req, res, next) => {
     let lang: false | string = false;
@@ -139,7 +100,7 @@ export function acceptLang(options: AcceptLangOptions): Middleware {
 
         // find matching language
         for (const l of req.languages) {
-          if (supportedLanguages.includes(l)) {
+          if (languages.includes(l)) {
             lang = l;
             break;
           }
@@ -150,11 +111,11 @@ export function acceptLang(options: AcceptLangOptions): Middleware {
     if (typeof lang === 'string') {
       req.lang = lang;
     } else {
-      req.lang = defaultLangFunc(req);
+      req.lang = defaultLang;
     }
 
-    if (translator) {
-      req.t = (key) => translator!(key, { lng: req.lang });
+    if (t) {
+      req.t = (key) => t!(key, { lng: req.lang });
     }
 
     next();

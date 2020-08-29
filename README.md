@@ -24,10 +24,7 @@ const run = async () => {
   const app = flitz();
 
   //        👇👇👇
-  app.use(acceptLang({
-    defaultLanguage: 'de',
-    supportedLanguages: ['de', 'en']
-  }));
+  app.use(acceptLang('de', 'en'));
 
   app.get('/', async (req, res) => {
     res.write('Language information: ' + JSON.stringify([
@@ -53,10 +50,7 @@ const run = async () => {
   const app = flitz();
 
   //        👇👇👇
-  app.use(acceptLang({
-    defaultLanguage: 'de',
-    supportedLanguages: ['de', 'en']
-  }));
+  app.use(acceptLang('de', 'en'));
 
   app.get('/', async (req, res) => {
     res.write('Language information: ' + JSON.stringify([
@@ -82,13 +76,11 @@ import { acceptLang } from '@flitz/accept-language';
 const run = async () => {
   const app = flitz();
 
-  app.use(acceptLang({
+  app.use(acceptLang(
     // set t() function (s. below)
-    t: await initI18(),
-
-    defaultLanguage: 'de',
-    supportedLanguages: ['de', 'en']
-  }));
+    await initI18(),
+    'de', 'en'
+  ));
 
   app.get('/', async (req, res) => {
     res.write('String: ' + req.t!('test'));  // use t() function in req
