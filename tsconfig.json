@@ -1,0 +1,12 @@
+{
+  "extends": "@flitz/tsconfig",
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "outDir": "lib",
+    "rootDir": "src"
+  },
+  "exclude": [
+    "node_modules",
+    "./src/sandbox"
+  ]
+}
